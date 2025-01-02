@@ -25,6 +25,10 @@ func main() {
 	args := os.Args
 	path1 := args[1]
 	path2 := args[2]
+	chksum := md5.New()
+	if len(args) == 4 && args[3] == "nochecksum" {
+		chksum = nil
+	}
 	f1, total1, _ := getFiles(path1)
 	f2, total2, _ := getFiles(path2)
 
@@ -56,18 +60,23 @@ func main() {
 		if !ok {
 			newfiles.Add(FileAndHash{Path: k2, Hash: ""})
 		} else {
-			checksum2, err2 := getFileChecksum(v2, md5.New())
-			if err2 != nil {
-				return
-			}
-			checksum1, err1 := getFileChecksum(v1, md5.New())
-			if err1 != nil {
-				return
-			}
-			if checksum1 == checksum2 {
-				nochange.Add(FileAndHash{Path: k2, Hash: checksum2})
+			if chksum == nil {
+				nochange.Add(FileAndHash{Path: k2, Hash: ""})
+
 			} else {
-				updatedfiles.Add(FileAndHash{Path: k2, Hash: checksum2})
+				checksum2, err2 := getFileChecksum(v2, chksum)
+				if err2 != nil {
+					return
+				}
+				checksum1, err1 := getFileChecksum(v1, chksum)
+				if err1 != nil {
+					return
+				}
+				if checksum1 == checksum2 {
+					nochange.Add(FileAndHash{Path: k2, Hash: checksum2})
+				} else {
+					updatedfiles.Add(FileAndHash{Path: k2, Hash: checksum2})
+				}
 			}
 		}
 	}
